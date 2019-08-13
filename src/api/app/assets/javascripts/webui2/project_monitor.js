@@ -8,7 +8,25 @@ function statusCell(meta, statusHash, tableInfo, projectName, packageName) {
   var architecture = info[1];
   var status = statusHash[repository][architecture][packageName] || {};
   var code = status.code;
-  if (code === undefined) return null;
+  var cellContent = {};
+  var codemap = {
+    'building': 0,
+    'scheduled': 1,
+    'dispatching': 2,
+    'finished': 3,
+    'signing': 4,
+    'blocked': 5,
+    'broken': 6,
+    'failed': 7,
+    'unresolvable': 8,
+    'succeeded': 9,
+    'disabled': 10,
+    'excluded': 11,
+    'locked': 12,
+    'deleting': 13,
+    'unknown': 14
+  };
+  if (code === undefined) return {display: '', filter: '', order: 15};
 
   var klass = 'build-state-' + code;
   var output = '<a ';
@@ -25,7 +43,12 @@ function statusCell(meta, statusHash, tableInfo, projectName, packageName) {
     }
   }
   output += ' class="' + klass + '">' + code + '</a>';
-  return output;
+
+  cellContent.display = output;
+  cellContent.filter = code;
+  cellContent.order = codemap[code];
+
+  return cellContent;
 }
 
 function initializeMonitorDataTable() {
@@ -61,7 +84,14 @@ function initializeMonitorDataTable() {
         data: null,
         className: 'text-center',
         render: function (packageName, type, row, meta) {
-          return statusCell(meta, statusHash, tableInfo, projectName, packageName);
+          var cellContent = statusCell(meta, statusHash, tableInfo, projectName, packageName);
+          if (cellContent === null) return null;
+          // Value to display in the cell
+          if (type === 'display') return cellContent.display;
+          // Value to sort by
+          if (type === 'sort') return cellContent.order;
+          // Value to filter by
+          return cellContent.filter;
         }
       }
     ]
