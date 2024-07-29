@@ -88,6 +88,20 @@ Requires:       ruby(abi) = %{__obs_ruby_abi_version}\
 	     "$DISABLE_RESTART_ON_UPDATE" = 1 && exit 0\
 	%{?*:/usr/bin/systemctl force-reload %{*}}\
 	) || : %{nil}
+%if ! %{defined _restart_on_update_never}
+%define _restart_on_update_never() : # Restart of %{*} skipped %{nil}
+%define _restart_on_update() %{?nil:
+	if [ -e /etc/sysconfig/services ]; then
+		DISABLE_RESTART_ON_UPDATE=
+		. /etc/sysconfig/services
+		case "$DISABLE_RESTART_ON_UPDATE" in
+		yes|1)	;;
+		*)	/usr/bin/systemctl try-restart %{*} || :
+		esac
+	fi
+	%{nil}
+}
+%endif
 
 %define service_del_postun(fnr) \
 test -n "$FIRST_ARG" || FIRST_ARG="$1"						\
